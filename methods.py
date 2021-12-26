@@ -1,4 +1,4 @@
-from sqlalchemy.sql.expression import desc
+from colorama.ansi import Fore
 from models import Book
 from database import SessionLocal
 import time
@@ -32,10 +32,10 @@ def add_book():
 
 
 def get_all_books():
-    print("\nALL BOOKS")
+    print(f"\n{Fore.CYAN}ALL BOOKS{Fore.RESET}")
     all_books = session.query(Book).order_by(Book.id)
     if all_books.count() == 0:
-        print("\nNo books found.")
+        print(f"\n{Fore.RED}No books found.{Fore.RESET}")
     for book in all_books:
         print(
             f"Book id: {book.id}, Title: {book.title}, Author: {book.author}, Published: {book.date_published}, Price: {book.price}"
@@ -45,6 +45,10 @@ def get_all_books():
 
 def search_for_book():
     book_ids = [book.id for book in session.query(Book).order_by(Book.id)]
+    if len(book_ids) == 0:
+        print(f"\n{Fore.RED}No books found.{Fore.RESET}")
+        time.sleep(1)
+        return
     print(f"\nOptions: {book_ids}")
     book_id = input("What is the book's id? ")
     searched_book = session.query(Book).filter_by(id=int(book_id)).first()
@@ -53,7 +57,7 @@ def search_for_book():
         f"\n{searched_book.title} by {searched_book.author}\nPublished: {searched_book.date_published}\nCurrent Price: {searched_book.price}\n"
     )
     operation = input(
-        "1) Edit entry\n2) Delete entry\n3) Search for another book\n4) Return to main menu\n\nWhat would you like to do? "
+        f"1) {Fore.GREEN}Edit entry{Fore.RESET}\n2) {Fore.RED}Delete entry{Fore.RESET}\n3) Search for another book\n4) Return to main menu\n\nWhat would you like to do? "
     )
 
     def update_detail(property, text):
@@ -86,16 +90,23 @@ def search_for_book():
 
 def book_analysis():
     books = session.query(Book).order_by(Book.date_published)
-    print(
-        f"Newest book: <Title: {books[0].title}, Author: {books[0].author}, Published: {books[0].date_published}, Price: {books[0].price}>"
-    )
-    print(
-        f"Oldest book: <Title: {books[-1].title}, Author: {books[-1].author}, Published: {books[-1].date_published}, Price: {books[-1].price}>"
-    )
-    print(f"Total Number of Books: {books.count()}")
+    if books.count() == 0:
+        print("\nNo books in library.")
+        time.sleep(1)
+        return
+    try:
+        print(
+            f"\nNewest book: <Title: {books[0].title}, Author: {books[0].author}, Published: {books[0].date_published}, Price: {books[0].price}>"
+        )
+        print(
+            f"Oldest book: <Title: {books[-1].title}, Author: {books[-1].author}, Published: {books[-1].date_published}, Price: {books[-1].price}>"
+        )
+        print(f"Total Number of Books: {books.count()}")
 
-    python_books = session.query(Book).filter(Book.title.ilike("%python%")).all()
+        python_books = session.query(Book).filter(Book.title.ilike("%python%")).all()
 
-    print(f"Total Number of Python Books: {len(python_books)}")
+        print(f"Total Number of Python Books: {len(python_books)}")
+    except Exception as error:
+        print("Error: ", error)
 
     time.sleep(1)
