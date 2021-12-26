@@ -15,3 +15,12 @@ def add_book():
     session.commit()
     session.close()
     print("Book added!\n")
+
+
+def get_all_books():
+    print("\nALL BOOKS")
+    all_books = session.query(Book).order_by(Book.id)
+    for book in all_books:
+        print(
+            f"Book id: {book.id}, Title: {book.title}, Author: {book.author}, Published: {book.date_published}, Price: {book.price}"
+        )
