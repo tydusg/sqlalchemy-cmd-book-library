@@ -1,5 +1,10 @@
+from sqlalchemy.sql.expression import desc
 from models import Book
 from database import SessionLocal
+import time
+import keyboard
+import datetime
+
 
 session = SessionLocal()
 
@@ -9,18 +14,88 @@ def add_book():
     author = input("Author: ")
     date_published = input("Published (Example: January 13, 2003): ")
     price = input("Price (Example: 10.99): ")
-
-    new_book = Book(title=title, author=author, date_published=date_published, price=price)
-    session.add(new_book)
-    session.commit()
-    session.close()
-    print("Book added!\n")
+    try:
+        date_published = date_published.split(" ")
+        date_published = datetime.date(
+            int(date_published[2]),
+            datetime.datetime.strptime(date_published[0], "%B").month,
+            int(date_published[1].strip(",")),
+        )
+        new_book = Book(title=title, author=author, date_published=date_published, price=price)
+        session.add(new_book)
+        session.commit()
+        session.close()
+        print("Book added!\n")
+    except Exception as error:
+        print("\nPlease try again.\nError found in input: ", error)
+    time.sleep(1)
 
 
 def get_all_books():
     print("\nALL BOOKS")
     all_books = session.query(Book).order_by(Book.id)
+    if all_books.count() == 0:
+        print("\nNo books found.")
     for book in all_books:
         print(
             f"Book id: {book.id}, Title: {book.title}, Author: {book.author}, Published: {book.date_published}, Price: {book.price}"
         )
+    time.sleep(1)
+
+
+def search_for_book():
+    book_ids = [book.id for book in session.query(Book).order_by(Book.id)]
+    print(f"\nOptions: {book_ids}")
+    book_id = input("What is the book's id? ")
+    searched_book = session.query(Book).filter_by(id=int(book_id)).first()
+    print(type(searched_book))
+    print(
+        f"\n{searched_book.title} by {searched_book.author}\nPublished: {searched_book.date_published}\nCurrent Price: {searched_book.price}\n"
+    )
+    operation = input(
+        "1) Edit entry\n2) Delete entry\n3) Search for another book\n4) Return to main menu\n\nWhat would you like to do? "
+    )
+
+    def update_detail(property, text):
+        keyboard.write(property)
+        updated_property = input(text)
+        return updated_property
+
+    if operation == "1":
+        print("\nEnter new details")
+        searched_book.title = update_detail(searched_book.title, "Title: ")
+        searched_book.author = update_detail(searched_book.author, "Author: ")
+        searched_book.date_published = update_detail(searched_book.date_published, "Published: ")
+        searched_book.price = update_detail(searched_book.price, "Price: ")
+
+        session.commit()
+        session.close()
+        print("Book updated!")
+
+    elif operation == "2":
+        session.delete(searched_book)
+        session.commit()
+        session.close()
+        print("Book deleted!")
+
+    elif operation == "3":
+        return search_for_book()
+
+    time.sleep(1)
+
+
+def book_analysis():
+    books = session.query(Book).order_by(Book.date_published)
+    print(
+        f"Newest book: <Title: {books[0].title}, Author: {books[0].author}, Published: {books[0].date_published}, Price: {books[0].price}>"
+    )
+    print(
+        f"Oldest book: <Title: {books[-1].title}, Author: {books[-1].author}, Published: {books[-1].date_published}, Price: {books[-1].price}>"
+    )
+    print(f"Total Number of Books: {books.count()}")
+
+    python_books = session.query(Book).filter(Book.title.ilike("%python%")).all()
+
+    print(f"Total Number of Python Books: {len(python_books)}")
+
+    time.sleep(1)
