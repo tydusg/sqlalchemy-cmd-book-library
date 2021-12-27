@@ -13,18 +13,19 @@ def return_to_menu():
     input(f"\nPress {Fore.GREEN}'ENTER'{Fore.RESET} to return to menu. ")
 
 
-def add_book():
-    def clean_date(date):
-        """Takes in a date of form (LongMonth DD, YYYY) and
-        converts it to a tuple of form (YYYY, MM, DD)
-        """
-        date = date.split(" ")
-        return datetime.date(
-            int(date[2]),
-            datetime.datetime.strptime(date[0], "%B").month,
-            int(date[1].strip(",")),
-        )
+def clean_date(date):
+    """Takes in a date of form (LongMonth DD, YYYY) and
+    converts it to a tuple of form (YYYY, MM, DD)
+    """
+    date = date.split(" ")
+    return datetime.date(
+        int(date[2]),
+        datetime.datetime.strptime(date[0], "%B").month,
+        int(date[1].strip(",")),
+    )
 
+
+def add_book():
     title = input("\nBook Title: ")
     author = input("Author: ")
     date_published = input("Published (Example: January 13, 2003): ")
@@ -43,13 +44,13 @@ def add_book():
 
 
 def get_all_books():
-    print(f"\n{Fore.RED}ALL BOOKS{Fore.RESET}")
+    print(f"\n{Fore.CYAN}ALL BOOKS{Fore.RESET}")
     all_books = session.query(Book).order_by(Book.id)
     if all_books.count() == 0:
         print(f"\n{Fore.RED}No books found.{Fore.RESET}")
     for book in all_books:
         print(
-            f"{book.id} | {Fore.GREEN}{book.title}{Fore.RESET} | {Fore.BLUE}{book.author}{Fore.RESET} | {Fore.LIGHTCYAN_EX}{book.date_published}{Fore.RESET} | {Fore.YELLOW}{book.price}{Fore.RESET}"
+            f"{book.id} | {Fore.YELLOW}{book.title}{Fore.RESET} | {Fore.GREEN}{book.author}{Fore.RESET} | {book.date_published}"
         )
     return_to_menu()
 
@@ -57,17 +58,24 @@ def get_all_books():
 def search_for_book():
     book_ids = [book.id for book in session.query(Book).order_by(Book.id)]
     if len(book_ids) == 0:
-        print(f"\n{Fore.RED}No books found.{Fore.RESET}")
+        print(f"\n{Fore.CYAN}No books found.{Fore.RESET}")
         return_to_menu()
         return
-    print(f"\nOptions: {book_ids}")
+    print(f"\nOptions: {Fore.GREEN}{book_ids}{Fore.RESET}")
     book_id = input("What is the book's id? ")
-    searched_book = session.query(Book).filter_by(id=int(book_id)).first()
+    try:
+        book_id = int(book_id)
+    except:
+        print(f"\n{Fore.RED}Sorry{Fore.RESET}, that's not a valid book id.\nPlease choose from the options below: ")
+        time.sleep(0.5)
+        return search_for_book()
+    searched_book = session.query(Book).filter_by(id=int(book_id)).one_or_none()
+    if searched_book == None:
+        print(f"\n{Fore.RED}Sorry{Fore.RESET}, that book id does not exist.\nPlease choose from the options below: ")
+        time.sleep(0.5)
+        return search_for_book()
     print(
         f"\n{searched_book.title} by {searched_book.author}\nPublished: {searched_book.date_published}\nCurrent Price: {searched_book.price}\n"
-    )
-    operation = input(
-        f"1) {Fore.GREEN}Edit entry{Fore.RESET}\n2) {Fore.RED}Delete entry{Fore.RESET}\n3) Search for another book\n4) Return to main menu\n\nWhat would you like to do? "
     )
 
     def update_detail(property, text):
@@ -75,27 +83,46 @@ def search_for_book():
         updated_property = input(text)
         return updated_property
 
-    if operation == "1":
-        print("\nEnter new details")
-        searched_book.title = update_detail(searched_book.title, "Title: ")
-        searched_book.author = update_detail(searched_book.author, "Author: ")
-        searched_book.date_published = update_detail(searched_book.date_published, "Published: ")
-        searched_book.price = update_detail(searched_book.price, "Price: ")
+    book_found = True
+    while book_found:
+        operation = input(
+            f"1) {Fore.GREEN}Edit entry{Fore.RESET}\n2) {Fore.RED}Delete entry{Fore.RESET}\n3) Search for another book\n4) Return to main menu\n\nWhat would you like to do? "
+        )
 
-        session.commit()
-        session.close()
-        print("Book updated!")
+        if operation == "1":
+            print("\nEnter new details")
+            searched_book.title = update_detail(searched_book.title, "Title: ")
+            searched_book.author = update_detail(searched_book.author, "Author: ")
+            searched_book.date_published = update_detail(
+                searched_book.date_published.strftime("%B %d, %Y"), "Published: "
+            )
+            searched_book.price = update_detail(str(searched_book.price), "Price: ")
+            try:
+                searched_book.date_published = clean_date(searched_book.date_published)
+                searched_book.price = round(float(searched_book.price), 2)
+                session.commit()
+                session.close()
+                print("Book updated!\n")
+                book_found = False
+            except Exception as error:
+                print("\nPlease try again.\nError found in input: ", error.__repr__())
 
-    elif operation == "2":
-        session.delete(searched_book)
-        session.commit()
-        session.close()
-        print("Book deleted!")
+        elif operation == "2":
+            session.delete(searched_book)
+            session.commit()
+            session.close()
+            print("Book deleted!")
+            book_found = False
 
-    elif operation == "3":
-        return search_for_book()
+        elif operation == "3":
+            return search_for_book()
 
-    return_to_menu()
+        elif operation == "4":
+            return
+
+        else:
+            print("\nSorry, that's not a valid option.\n")
+            time.sleep(0.5)
 
 
 def book_analysis():
