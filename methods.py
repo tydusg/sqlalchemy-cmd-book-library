@@ -94,7 +94,7 @@ def search_for_book():
             searched_book.title = update_detail(searched_book.title, "Title: ")
             searched_book.author = update_detail(searched_book.author, "Author: ")
             searched_book.date_published = update_detail(
-                searched_book.date_published.strftime("%B %d, %Y"), "Published: "
+                searched_book.date_published.strftime("%B %#d, %Y"), "Published: "
             )
             searched_book.price = update_detail(str(searched_book.price), "Price: ")
             try:
