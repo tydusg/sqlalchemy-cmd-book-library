@@ -9,50 +9,60 @@ import datetime
 session = SessionLocal()
 
 
+def return_to_menu():
+    input(f"\nPress {Fore.GREEN}'ENTER'{Fore.RESET} to return to menu. ")
+
+
 def add_book():
+    def clean_date(date):
+        """Takes in a date of form (LongMonth DD, YYYY) and
+        converts it to a tuple of form (YYYY, MM, DD)
+        """
+        date = date.split(" ")
+        return datetime.date(
+            int(date[2]),
+            datetime.datetime.strptime(date[0], "%B").month,
+            int(date[1].strip(",")),
+        )
+
     title = input("\nBook Title: ")
     author = input("Author: ")
     date_published = input("Published (Example: January 13, 2003): ")
     price = input("Price (Example: 10.99): ")
     try:
-        date_published = date_published.split(" ")
-        date_published = datetime.date(
-            int(date_published[2]),
-            datetime.datetime.strptime(date_published[0], "%B").month,
-            int(date_published[1].strip(",")),
-        )
+        date_published = clean_date(date_published)
+        price = round(float(price), 2)
         new_book = Book(title=title, author=author, date_published=date_published, price=price)
         session.add(new_book)
         session.commit()
         session.close()
         print("Book added!\n")
     except Exception as error:
-        print("\nPlease try again.\nError found in input: ", error)
-    time.sleep(1)
+        print("\nPlease try again.\nError found in input: ", error.__repr__())
+    return_to_menu()
 
 
 def get_all_books():
-    print(f"\n{Fore.CYAN}ALL BOOKS{Fore.RESET}")
+    print(f"\n{Fore.RED}ALL BOOKS{Fore.RESET}")
     all_books = session.query(Book).order_by(Book.id)
     if all_books.count() == 0:
         print(f"\n{Fore.RED}No books found.{Fore.RESET}")
     for book in all_books:
         print(
-            f"Book id: {book.id}, Title: {book.title}, Author: {book.author}, Published: {book.date_published}, Price: {book.price}"
+            f"{book.id} | {Fore.GREEN}{book.title}{Fore.RESET} | {Fore.BLUE}{book.author}{Fore.RESET} | {Fore.LIGHTCYAN_EX}{book.date_published}{Fore.RESET} | {Fore.YELLOW}{book.price}{Fore.RESET}"
         )
-    time.sleep(1)
+    return_to_menu()
 
 
 def search_for_book():
     book_ids = [book.id for book in session.query(Book).order_by(Book.id)]
     if len(book_ids) == 0:
         print(f"\n{Fore.RED}No books found.{Fore.RESET}")
-        time.sleep(1)
+        return_to_menu()
         return
     print(f"\nOptions: {book_ids}")
     book_id = input("What is the book's id? ")
     searched_book = session.query(Book).filter_by(id=int(book_id)).first()
-    print(type(searched_book))
     print(
         f"\n{searched_book.title} by {searched_book.author}\nPublished: {searched_book.date_published}\nCurrent Price: {searched_book.price}\n"
     )
@@ -85,22 +95,18 @@ def search_for_book():
     elif operation == "3":
         return search_for_book()
 
-    time.sleep(1)
+    return_to_menu()
 
 
 def book_analysis():
     books = session.query(Book).order_by(Book.date_published)
     if books.count() == 0:
         print("\nNo books in library.")
-        time.sleep(1)
+        return_to_menu()
         return
     try:
-        print(
-            f"\nNewest book: <Title: {books[0].title}, Author: {books[0].author}, Published: {books[0].date_published}, Price: {books[0].price}>"
-        )
-        print(
-            f"Oldest book: <Title: {books[-1].title}, Author: {books[-1].author}, Published: {books[-1].date_published}, Price: {books[-1].price}>"
-        )
+        print(f"\nNewest book: <{books[0].__repr__()}>")
+        print(f"Oldest book: <{books[-1].__repr__()}>")
         print(f"Total Number of Books: {books.count()}")
 
         python_books = session.query(Book).filter(Book.title.ilike("%python%")).all()
@@ -109,4 +115,4 @@ def book_analysis():
     except Exception as error:
         print("Error: ", error)
 
-    time.sleep(1)
+    return_to_menu()
